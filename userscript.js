@@ -9,65 +9,87 @@
 // @grant        none
 // ==/UserScript==
 
-(function() { window.setTimeout(() => {
+(function(){
     'use strict';
-    const masthead_container = document.getElementById("masthead-container");
-    const page_manager = document.getElementById("page-manager");
-    const player_theater_container = document.getElementById("player-theater-container");
-    const video = document.getElementsByClassName("html5-main-video")[0];
-    const theather_mode_btn = document.getElementsByClassName("ytp-size-button")[0];
-    let is_theather_mode = false;
-    masthead_container.style.overflow = "hidden"; // hide navigator when full screen
-    video.style.maxHeight = "100vh"; // make video adjust to the screen height
-    let psudo_fullscreen = {
-        speed: 0.25,
-        vis: 1,
-        render: function(){
-            masthead_container.style.opacity = psudo_fullscreen.vis;
-            masthead_container.style.maxHeight = (psudo_fullscreen.vis*100)+"%";
-        },
-        full: function (){
-            page_manager.style.marginTop = 0;
-            player_theater_container.style.minHeight = "100vh"; // make the black background adjust to the actual height
-            function draw (){
-                psudo_fullscreen.render();
-                psudo_fullscreen.vis -= psudo_fullscreen.speed;
-                if(psudo_fullscreen.vis > 0){
-                    window.requestAnimationFrame(draw);
-                } else {
-                    psudo_fullscreen.vis = 0;
-                    psudo_fullscreen.render();
-                }
-            };
-            window.requestAnimationFrame(draw);
-        },
-        close: function (){
-            page_manager.style.marginTop = null;
-            player_theater_container.style.minHeight = null;
-            function draw (){
-                psudo_fullscreen.render();
-                psudo_fullscreen.vis += psudo_fullscreen.speed;
-                if(psudo_fullscreen.vis < 1){
-                    window.requestAnimationFrame(draw);
-                } else {
-                    psudo_fullscreen.vis = 1;
-                    psudo_fullscreen.render();
-                }
-            };
-            window.requestAnimationFrame(draw);
-        }
-    };
-    if(!!player_theater_container.innerHTML){
-        psudo_fullscreen.full();
-        is_theather_mode = true;
+    // Youtube is a SPA (Single Page Application), so we can't simply detect if DOM is fully loaded via window.addEventListener("load", callback)
+
+    // List of elements that needs to be loaded.
+    const elements = {
+        masthead_container: document.getElementById("masthead-container"),
+        page_manager: document.getElementById("page-manager"),
+        player_theater_container: document.getElementById("player-theater-container"),
+        video: document.getElementsByClassName("html5-main-video")[0],
+        theather_mode_btn: document.getElementsByClassName("ytp-size-button")[0],
+        fullscreen_btn: document.getElementsByClassName("ytp-fullscreen-button")[0]
     }
-    theather_mode_btn.addEventListener("click", function(){
-        if(is_theather_mode){
-            psudo_fullscreen.close();
-            is_theather_mode = false;
-        } else {
+    function CheckFullyLoaded () {
+        let loaded = true;
+        for (let i in elements) {
+            if(!elements[i]){
+                setTimeout(checkDOMChange, 75);
+                loaded = false;
+                break;
+            }
+        }
+        if(loaded) { main(); }
+    }
+    CheckFullyLoaded();
+    function main () {
+        let is_theather_mode = false;
+        elements.masthead_container.style.overflow = "hidden"; // hide navigator when full screen
+        elements.video.style.maxHeight = "100vh"; // make video adjust to the screen height
+        let psudo_fullscreen = {
+            speed: 0.25,
+            vis: 1,
+            render: function(){
+                elements.masthead_container.style.opacity = psudo_fullscreen.vis;
+                elements.masthead_container.style.maxHeight = (psudo_fullscreen.vis*100)+"%";
+            },
+            full: function (){
+                elements.page_manager.style.marginTop = 0;
+                elements.player_theater_container.style.minHeight = "100vh"; // make the black background adjust to the actual height
+                elements.fullscreen_btn.style.display = "none";
+                function draw (){
+                    psudo_fullscreen.render();
+                    psudo_fullscreen.vis -= psudo_fullscreen.speed;
+                    if(psudo_fullscreen.vis > 0){
+                        window.requestAnimationFrame(draw);
+                    } else {
+                        psudo_fullscreen.vis = 0;
+                        psudo_fullscreen.render();
+                    }
+                };
+                window.requestAnimationFrame(draw);
+            },
+            close: function (){
+                elements.page_manager.style.marginTop = null;
+                elements.player_theater_container.style.minHeight = null;
+                elements.fullscreen_btn.style.display = null;
+                function draw (){
+                    psudo_fullscreen.render();
+                    psudo_fullscreen.vis += psudo_fullscreen.speed;
+                    if(psudo_fullscreen.vis < 1){
+                        window.requestAnimationFrame(draw);
+                    } else {
+                        psudo_fullscreen.vis = 1;
+                        psudo_fullscreen.render();
+                    }
+                };
+                window.requestAnimationFrame(draw);
+            }
+        };
+        if(!!elements.player_theater_container.innerHTML){
             psudo_fullscreen.full();
             is_theather_mode = true;
         }
-    });
-}, 100) })();
+        elements.theather_mode_btn.addEventListener("click", function(){
+            if(is_theather_mode){
+                psudo_fullscreen.close();
+                is_theather_mode = false;
+            } else {
+                psudo_fullscreen.full();
+                is_theather_mode = true;
+            }
+        });
+    };
+})();

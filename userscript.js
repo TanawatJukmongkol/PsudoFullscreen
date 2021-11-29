@@ -9,7 +9,7 @@
 // @grant        none
 // ==/UserScript==
 
-(function() {
+(function() { window.setTimeout(() => {
     'use strict';
     const masthead_container = document.getElementById("masthead-container");
     const page_manager = document.getElementById("page-manager");
@@ -70,4 +70,4 @@
             is_theather_mode = true;
         }
     });
-})();
+}, 100) })();

@@ -11,30 +11,24 @@
 
 (function(){
     'use strict';
-    // Youtube is a SPA (Single Page Application), so we can't simply detect if DOM is fully loaded via window.addEventListener("load", callback)
-
-    // List of elements that needs to be loaded.
-    const elements = {
-        masthead_container: document.getElementById("masthead-container"),
-        page_manager: document.getElementById("page-manager"),
-        player_theater_container: document.getElementById("player-theater-container"),
-        video: document.getElementsByClassName("html5-main-video")[0],
-        theather_mode_btn: document.getElementsByClassName("ytp-size-button")[0],
-        fullscreen_btn: document.getElementsByClassName("ytp-fullscreen-button")[0]
+    let elements; // List of elements that needs to be loaded.
+    // Bruh.
+    function get_elements () {
+        elements = {
+            masthead_container: document.getElementById("masthead-container"),
+            page_manager: document.getElementById("page-manager"),
+            player_theater_container: document.getElementById("player-theater-container"),
+            video: document.getElementsByClassName("html5-main-video")[0],
+            theather_mode_btn: document.getElementsByClassName("ytp-size-button")[0],
+            fullscreen_btn: document.getElementsByClassName("ytp-fullscreen-button")[0]
+        };
     }
-    function CheckFullyLoaded () {
-        let loaded = true;
-        for (let i in elements) {
-            if(!elements[i]){
-                setTimeout(checkDOMChange, 75);
-                loaded = false;
-                break;
-            }
-        }
-        if(loaded) { main(); }
-    }
-    CheckFullyLoaded();
+    main();
+    document.addEventListener('yt-navigate-finish', main);
+    document.addEventListener('DOMContentLoaded', main);
     function main () {
+        if (!window.location.pathname.startsWith("/watch")) { return; }
+        get_elements();
         let is_theather_mode = false;
         elements.masthead_container.style.overflow = "hidden"; // hide navigator when full screen
         elements.video.style.maxHeight = "100vh"; // make video adjust to the screen height

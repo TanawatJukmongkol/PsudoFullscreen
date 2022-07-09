@@ -51,7 +51,9 @@ class YT_element {
         return this;
     }
     listen (ev, fn) {
-        this.el[0].addEventListener(ev, fn);
+        this.el.forEach((el) => {
+            el.addEventListener(ev, fn);
+        });
         return this;
     }
     newState (state, fn) {
@@ -157,6 +159,6 @@ function main () {
             theater.el[0].style.opacity = "1";
         });
     } catch(e) {
-        alert(e);
+        console.error("Psuedo Fullscreen error: " + e);
     }
 }

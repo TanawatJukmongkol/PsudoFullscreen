@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Psuedo Fullscreen
 // @namespace    http://tampermonkey.net/
-// @version      2.0
+// @version      2.1
 // @description  Removes navigator bar, and fix YouTube resizing problems.
 // @author       Tanawat J.
 // @match        https://www.youtube.com/*
@@ -51,9 +51,7 @@ class YT_element {
         return this;
     }
     listen (ev, fn) {
-        for(let i in this.el){
-            this.el[i].addEventListener(ev, fn);
-        }
+        this.el[0].addEventListener(ev, fn);
         return this;
     }
     newState (state, fn) {
@@ -75,17 +73,19 @@ function main () {
     // Navigator page height regulator
     new YT_element("#page-manager", {
         name: "YT_page_manager"
-    }).el[0].style.transition = "all .5s ease";
+    });
     // Navigator wrapper
     new YT_element("#masthead-container", {
         name: "YT_navigator"
     }).newState("hidden", (yt) => {
         YT_elements.get("YT_page_manager").el[0].style["margin-top"]="0";
+        YT_elements.get("YT_page_manager").el[0].style.transition = "none";
         yt.el[0].style["max-height"] = "0";
         yt.el[0].style.overflow = "hidden";
         yt.el[0].style.opacity = "0";
     }).newState("show", (yt) => {
         YT_elements.get("YT_page_manager").el[0].style["margin-top"]="var(--ytd-masthead-height,var(--ytd-toolbar-height))";
+        YT_elements.get("YT_page_manager").el[0].style.transition = "all .5s ease"
         yt.el[0].style["max-height"] = "10vh";
         yt.el[0].style.overflow = "unset";
         yt.el[0].style.opacity = "1";
@@ -111,34 +111,52 @@ function main () {
     }
     // Theater wrapper
     const nav = YT_elements.get("YT_navigator");
+    let theater;
+    function init_theater () {
+        if (!theater) {
+            theater = new YT_element("#player-theater-container", {
+                name: "YT_theater_container"
+            });
+            theater.el[0].style.transition = "opacity 1s ease";
+            theater.newState("full", (yt) => {
+                yt.el[0].style["min-height"] = "100vh";
+                yt.el[0].style.opacity = "1";
+            }).newState("original", (yt) => {
+                yt.el[0].style["min-height"] = "0px";
+                yt.el[0].style.opacity = "0";
+            });
+        }
+        return theater;
+    }
     function update_theater () {
-        const theater = new YT_element("#player-theater-container", {
-            name: "YT_theater_container"
-        });
-        theater.el[0].style.transition = "opacity 1s ease";
-        theater.newState("full", (yt) => {
-            yt.el[0].style["min-height"] = "100vh";
-            yt.el[0].style.opacity = "1";
-        }).newState("original", (yt) => {
-            yt.el[0].style["min-height"] = "0px";
-            yt.el[0].style.opacity = "0";
-        });
+        init_theater();
         if(theater.el[0].innerHTML) {
             nav.setState("show");
             theater.setState("original");
+            YT_elements.get("YT_fullscreen_btn").el[0].style.display = "inline-block";
         } else {
             nav.setState("hidden");
             theater.setState("full");
+            YT_elements.get("YT_fullscreen_btn").el[0].style.display = "none";
         }
     }
     window.setTimeout(function() {
-        let theater = document.getElementById("player-theater-container");
-        if (theater?.innerHTML) {
+        init_theater();
+        if (theater?.el[0].innerHTML) {
             nav.setState("hidden");
-            theater.style["min-height"] = "100vh";
-            theater.style.opacity = "1";
+            theater.setState("full");
+            YT_elements.get("YT_fullscreen_btn").el[0].style.display = "none";
             window.dispatchEvent(new Event('resize'));
         }
     }, 1200);
-    YT_elements.get("YT_theater_btn").listen("click", update_theater);
-};
+    try {
+        YT_elements.get("YT_theater_btn").listen("click", update_theater);
+        YT_elements.get("YT_fullscreen_btn").listen("click", function () {
+            YT_elements.get("YT_page_manager").el[0].style.transition = "none";
+            init_theater();
+            theater.el[0].style.opacity = "1";
+        });
+    } catch(e) {
+        alert(e);
+    }
+}

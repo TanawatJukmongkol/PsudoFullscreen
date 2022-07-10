@@ -51,7 +51,7 @@ class YT_element {
         return this;
     }
     listen (ev, fn) {
-        this.el.forEach((el) => {
+        this.el.forEach(el => {
             el.addEventListener(ev, fn);
         });
         return this;
@@ -104,7 +104,11 @@ function main () {
     new YT_element(".ytp-fullscreen-button", {
         name: "YT_fullscreen_btn"
     });
-    // Check conditions.
+    // Miniplayer button
+    new YT_element(".ytp-miniplayer-button", {
+        name: "YT_miniplayer_btn_minimize"
+    });
+    // Check conditions to see what will the plugin do.
     if(document.location.href.indexOf("https://www.youtube.com/watch") != 0) return;
     if (!YT_elements.all_loaded) {
         // Try to reload if not all elements are loaded.
@@ -136,28 +140,51 @@ function main () {
             nav.setState("show");
             theater.setState("original");
             YT_elements.get("YT_fullscreen_btn").el[0].style.display = "inline-block";
+            YT_elements.get("YT_miniplayer_btn_minimize").el[0].style.display = "inline-block";
         } else {
             nav.setState("hidden");
             theater.setState("full");
             YT_elements.get("YT_fullscreen_btn").el[0].style.display = "none";
+            YT_elements.get("YT_miniplayer_btn_minimize").el[0].style.display = "none";
         }
+        window.dispatchEvent(new Event('resize'));
     }
-    window.setTimeout(function() {
+    function invert_update_theater () {
         init_theater();
-        if (theater?.el[0].innerHTML) {
+        if(!theater.el[0].innerHTML) {
+            nav.setState("show");
+            theater.setState("original");
+            YT_elements.get("YT_fullscreen_btn").el[0].style.display = "inline-block";
+            YT_elements.get("YT_miniplayer_btn_minimize").el[0].style.display = "inline-block";
+        } else {
             nav.setState("hidden");
             theater.setState("full");
             YT_elements.get("YT_fullscreen_btn").el[0].style.display = "none";
-            window.dispatchEvent(new Event('resize'));
+            YT_elements.get("YT_miniplayer_btn_minimize").el[0].style.display = "none";
         }
-    }, 1200);
+        window.dispatchEvent(new Event('resize'));
+    }
+    function update_fullscreen () {
+        YT_elements.get("YT_page_manager").el[0].style.transition = "none";
+        init_theater();
+        theater.el[0].style.opacity = "1";
+    }
+    function update_miniplayer () {
+        update_fullscreen();
+        invert_update_theater();
+        if(document.location.href.indexOf("https://www.youtube.com/watch") == -1) nav.setState("show");
+    }
     try {
-        YT_elements.get("YT_theater_btn").listen("click", update_theater);
-        YT_elements.get("YT_fullscreen_btn").listen("click", function () {
-            YT_elements.get("YT_page_manager").el[0].style.transition = "none";
-            init_theater();
-            theater.el[0].style.opacity = "1";
+        window.setTimeout(invert_update_theater, 1200);
+        document.addEventListener("keyup", ev => {
+            switch (ev.key) {
+                case "t": invert_update_theater(); break;
+                case "f": update_fullscreen(); break;
+                case "i": update_miniplayer(); break;
+            }
         });
+        YT_elements.get("YT_theater_btn").listen("click", update_theater);
+        YT_elements.get("YT_fullscreen_btn").listen("click", update_fullscreen);
     } catch(e) {
         console.error("Psuedo Fullscreen error: " + e);
     }
